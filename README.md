@@ -72,57 +72,136 @@ Save this as `localopen_service.py`:
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs, unquote
 import os
+import re
+import sys
+import subprocess
+import time
 
 HOST = "127.0.0.1"
 PORT = 2222
-TOKEN = "ChangeThisToYourToken"
+TOKEN = "PUT-YOUR-TOKEN-HERE"
 
-ALLOWED_PREFIXES = [
-    r"C:\\",
-    r"D:\\",
-    r"Z:\\",
-    r"\\10.2.1.74\\",
-]
+def normalize_path(path: str) -> str:
+    path = path.strip().strip('"').strip("'")
 
-def normalize_path(path):
+    # Decode URL encoding first
     path = unquote(path)
-    return path.strip().strip('"').strip("'")
 
-def is_allowed(path):
-    p = path.lower()
-    return any(p.startswith(prefix.lower()) for prefix in ALLOWED_PREFIXES)
+    # Replace forward slashes with backslashes (Windows-native)
+    path = path.replace("/", "\\")
+
+    return path
+
+def is_allowed(path: str) -> bool:
+    # Allow any drive letter like C:\, D:\, H:\, etc.
+    if re.match(r'^[a-zA-Z]:\\', path):
+        return True
+
+    # Allow UNC paths (network shares)
+    if path.startswith('\\\\'):
+        return True
+
+    return False
+
+
+def focus_window(title):
+    subprocess.Popen([
+        # "powershell",
+        "-NoProfile",
+        "-Command",
+        f"$wshell = New-Object -ComObject wscript.shell; $wshell.AppActivate('{title}')"
+    ])
+
+
+import os
+import subprocess
+
+def open_path(path):
+    ext = os.path.splitext(path)[1].lower()
+
+    if os.path.isdir(path):
+        subprocess.Popen(["explorer.exe", path])
+        time.sleep(0.5)
+        focus_window("File Explorer")
+    else:
+        os.startfile(path)
+        time.sleep(1)
+
+        if ext in [".xls", ".xlsx", ".xlsm"]:
+            focus_window("Excel")
+        elif ext == ".pdf":
+            focus_window(os.path.basename(path))
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
 
         if parsed.path != "/open":
-            self.send_error(404)
+            self.send_response(404)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(b"Not found")
             return
 
         qs = parse_qs(parsed.query)
         token = qs.get("token", [""])[0]
-        path = normalize_path(qs.get("path", [""])[0])
+        raw_path = qs.get("path", [""])[0]
+        path = normalize_path(unquote(raw_path))
 
         if token != TOKEN:
-            self.send_error(403)
+            self.send_response(403)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(b"Forbidden")
+            return
+
+        if not path:
+            self.send_response(400)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(b"Missing path")
             return
 
         if not is_allowed(path):
-            self.send_error(403)
+            self.send_response(403)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(b"Path not allowed")
             return
 
-        if not os.path.exists(path):
-            self.send_error(404)
+        # Convert to Windows path for existence check
+        win_path = path.replace("/", "\\")
+
+        if not os.path.exists(win_path):
+            self.send_response(404)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(f"Path does not exist: {win_path}".encode("utf-8"))
             return
 
-        os.startfile(path)
+        try:
+            open_path(path)
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(b"""<html><body>Opened.</body></html>""")
+        except Exception as e:
+            self.send_response(500)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(f"Error: {e}".encode("utf-8"))
 
-        self.send_response(200)
-        self.end_headers()
-
-    def log_message(self, *args):
+    def log_message(self, format, *args):
+        # Stay silent
         pass
 
-HTTPServer((HOST, PORT), Handler).serve_forever()
+def main():
+    try:
+        server = HTTPServer((HOST, PORT), Handler)
+    except OSError as e:
+        sys.exit(f"Could not bind to {HOST}:{PORT}: {e}")
 
+    server.serve_forever()
+
+if __name__ == "__main__":
+    main()
