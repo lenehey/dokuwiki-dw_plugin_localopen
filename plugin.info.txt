@@ -1,0 +1,7 @@
+base   localexplorer
+author Leonard Heyman
+email  lenehey@gmail.com
+date   2023-08-12
+name   LocalOpen plugin
+desc   Creates localhost links in dokuwiki
+url    https://www.dokuwiki.org/plugin:localopen
