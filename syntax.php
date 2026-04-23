@@ -64,7 +64,13 @@ class syntax_plugin_localopen extends \dokuwiki\Extension\SyntaxPlugin
         $href = hsc($url);
         $title_attr = hsc($path);
 
-        $renderer->doc .= '<a class="localopen-link" title="' . $title_attr . '" href="' . $href . '" onclick="fetch(this.href,{mode:\'no-cors\'}); return false;">' . $title . '</a>';
+        $icon = DOKU_BASE . 'lib/plugins/localopen/images/lopen.svg';
+
+        $renderer->doc .=
+            '<a class="localopen-link" title="' . $title_attr . '" href="' . $href . '" onclick="fetch(this.href,{mode:\'no-cors\'}); return false;">' .
+            '<img src="' . hsc($icon) . '" alt="" class="localopen-icon" /> ' .
+            $title .
+            '</a>';
 
         return true;
     }
