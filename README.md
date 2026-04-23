@@ -66,7 +66,7 @@ Update it in:
 
 ### 3. Run the Local Python Service
 
-Save this as `localopen_service.py`:
+1. Save this as `localopen_service.py`:
 
 ```python
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -205,3 +205,104 @@ def main():
 
 if __name__ == "__main__":
     main()
+```
+
+# Run the LocalOpen Python Service at Windows Login (Task Scheduler)
+
+This guide configures your Python script to run **silently** when you log into Windows, using Task Scheduler.
+
+---
+
+## Prerequisites
+
+- Python installed
+- Your script (e.g., `local_linker.py`) working when run manually
+- Path to `pythonw.exe` (important for no console window)
+
+Example Python path:  C:\Users\me\AppData\Local\Programs\Python\Python310\pythonw.exe
+
+
+---
+
+## Step 1 — Open Task Scheduler
+
+1. Press `Win + R`
+2. Enter:  `taskschd.msc`
+3. Press Enter
+
+---
+
+## Step 2 — Create a New Task
+
+1. In Task Scheduler, click: `Create Task`
+
+> Do **not** use "Create Basic Task"
+
+---
+
+## Step 3 — Configure the General Tab
+
+- **Name:** `LocalOpen Service`
+- Select:
+  - ✅ Run only when user is logged on
+  - ✅ Run with highest privileges *(optional but recommended)*
+
+---
+
+## Step 4 — Configure the Trigger
+
+1. Go to the **Triggers** tab
+2. Click **New...**
+
+Set:
+- **Begin the task:** `At log on`
+- **User:** Your user account
+
+Click **OK**
+
+---
+
+## Step 5 — Configure the Action
+
+1. Go to the **Actions** tab
+2. Click **New...**
+
+### Program/script
+C:\Users\me\AppData\Local\Programs\Python\Python310\pythonw.exe
+
+
+### Add arguments
+"C:\Users\me\OneDrive\Apps\General Python Scripts\local_linker.py"
+
+
+### Start in
+C:\Users\me\OneDrive\Apps\General Python Scripts
+
+
+Click **OK**
+
+---
+
+## Step 6 — Save the Task
+
+- Click **OK**
+- Enter your Windows password if prompted
+
+---
+
+## Step 7 — Test the Task
+
+1. In Task Scheduler:
+   - Right-click the task
+   - Click **Run**
+
+2. Test a link in your wiki
+
+---
+
+## Verify It Is Running
+
+Open PowerShell:
+
+```powershell
+Get-Process pythonw
