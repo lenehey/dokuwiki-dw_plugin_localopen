@@ -18,36 +18,38 @@ class syntax_plugin_localopen extends \dokuwiki\Extension\SyntaxPlugin
         return 'normal';
     }
 
-    public function getSort()
-    {
-        return 299;
-    }
+	public function getSort()
+	{
+		return 299;
+	}
 
-    public function connectTo($mode)
-    {
-        $tag = preg_quote($this->getConf('tag'), '/');
+	public function connectTo($mode)
+	{
+		$tag = trim($this->getConf('tag') ?: 'lopen');
+		$tag = preg_quote($tag, '/');
 
-        $this->Lexer->addSpecialPattern(
-            '\[\[' . $tag . '>[^|\]]+\|[^]]+\]\]',
-            $mode,
-            'plugin_localopen'
-        );
-    }
+		$this->Lexer->addSpecialPattern(
+			'\[\[' . $tag . '>[^\|\]]+(?:\|[^\]]+)?\]\]',
+			$mode,
+			'plugin_localopen'
+		);
+	}
 
-    public function handle($match, $state, $pos, Doku_Handler $handler)
-    {
-        $tag = preg_quote($this->getConf('tag'), '/');
+	public function handle($match, $state, $pos, Doku_Handler $handler)
+	{
+		$tag = trim($this->getConf('tag') ?: 'lopen');
+		$tag = preg_quote($tag, '/');
 
-        preg_match('/\[\[' . $tag . '>([^|]+)\|([^]]+)\]\]/i', $match, $matches);
+		preg_match('/\[\[' . $tag . '>([^\|\]]+)(?:\|([^\]]+))?\]\]/i', $match, $matches);
 
-        $path = str_replace('"', '', $matches[1]);
-        $title = $matches[2];
+		$path = str_replace('"', '', $matches[1]);
+		$title = isset($matches[2]) && $matches[2] !== '' ? $matches[2] : $path;
 
-        return [
-            'path'  => $path,
-            'title' => $title,
-        ];
-    }
+		return [
+			'path'  => $path,
+			'title' => $title,
+		];
+	}
 
     public function render($mode, Doku_Renderer $renderer, $data)
     {
