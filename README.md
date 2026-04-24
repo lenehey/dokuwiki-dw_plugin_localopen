@@ -77,9 +77,10 @@ import sys
 import subprocess
 import time
 
+
 HOST = "127.0.0.1"
 PORT = 2222
-TOKEN = "PUT-YOUR-TOKEN-HERE"
+TOKEN = "JqV5nRaGMau"
 
 def normalize_path(path: str) -> str:
     path = path.strip().strip('"').strip("'")
@@ -104,33 +105,13 @@ def is_allowed(path: str) -> bool:
     return False
 
 
-def focus_window(title):
-    subprocess.Popen([
-        # "powershell",
-        "-NoProfile",
-        "-Command",
-        f"$wshell = New-Object -ComObject wscript.shell; $wshell.AppActivate('{title}')"
-    ])
-
-
-import os
-import subprocess
-
 def open_path(path):
-    ext = os.path.splitext(path)[1].lower()
-
     if os.path.isdir(path):
         subprocess.Popen(["explorer.exe", path])
-        time.sleep(0.5)
-        focus_window("File Explorer")
     else:
         os.startfile(path)
-        time.sleep(1)
 
-        if ext in [".xls", ".xlsx", ".xlsm"]:
-            focus_window("Excel")
-        elif ext == ".pdf":
-            focus_window(os.path.basename(path))
+
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -181,10 +162,8 @@ class Handler(BaseHTTPRequestHandler):
 
         try:
             open_path(path)
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_response(204)
             self.end_headers()
-            self.wfile.write(b"""<html><body>Opened.</body></html>""")
         except Exception as e:
             self.send_response(500)
             self.send_header("Content-Type", "text/plain; charset=utf-8")
