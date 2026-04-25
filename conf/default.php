@@ -1,4 +1,4 @@
 <?php
 $conf['tag']   = 'lopen';
-$conf['token'] = 'ChangeThisToAStrongToken';
-$conf['port']  = 2222;
+$conf['token'] = 'PutYourTokenHere';
+$conf['port']  = 8765;
