@@ -25,24 +25,32 @@ class syntax_plugin_localopen extends \dokuwiki\Extension\SyntaxPlugin
 
 	public function connectTo($mode)
 	{
-		$tag = trim($this->getConf('tag') ?: 'lopen');
-		$tag = preg_quote($tag, '/');
+		$tag = $this->getTagRegex();
 
 		$this->Lexer->addSpecialPattern(
-			'\[\[' . $tag . '>[^\|\]]+(?:\|[^\]]+)?\]\]',
+			'\{\{' . $tag . '>[^\|\}]+(?:\|[^\}]+)?\}\}',
 			$mode,
 			'plugin_localopen'
 		);
 	}
 
-	public function handle($match, $state, $pos, Doku_Handler $handler)
+	private function getTagRegex()
 	{
 		$tag = trim($this->getConf('tag') ?: 'lopen');
-		$tag = preg_quote($tag, '/');
+		return preg_quote($tag, '/');
+	}
 
-		preg_match('/\[\[' . $tag . '>([^\|\]]+)(?:\|([^\]]+))?\]\]/i', $match, $matches);
 
-		$path = str_replace('"', '', $matches[1]);
+
+	public function handle($match, $state, $pos, Doku_Handler $handler)
+	{
+
+		$tag = $this->getTagRegex();
+		if (!preg_match('/\{\{' . $tag . '>([^\|\}]+)(?:\|([^\}]+))?\}\}/i', $match, $matches)) {
+			return false;
+		}
+
+		$path = trim($matches[1], "\"'");
 		$title = isset($matches[2]) && $matches[2] !== '' ? $matches[2] : $path;
 
 		return [
@@ -51,29 +59,30 @@ class syntax_plugin_localopen extends \dokuwiki\Extension\SyntaxPlugin
 		];
 	}
 
-    public function render($mode, Doku_Renderer $renderer, $data)
-    {
-        if ($mode !== 'xhtml') return false;
+	public function render($mode, Doku_Renderer $renderer, $data)
+	{
+		if ($mode !== 'xhtml') return false;
 
-        $path  = $data['path'];
-        $title = hsc($data['title']);
+		$path  = $data['path'];
+		$title = hsc($data['title']);
 
-        $token = $this->getConf('token');
-        $port  = $this->getConf('port');
+		$token = $this->getConf('token');
+		$port  = $this->getConf('port');
+		
+		if (!$token || !$port) {
+			return false;
+		}
 
-        $url = 'http://127.0.0.1:' . $port . '/open?path=' . rawurlencode($path) . '&token=' . rawurlencode($token);
+		$url = 'http://127.0.0.1:' . $port .
+			   '/open?path=' . rawurlencode($path) .
+			   '&token=' . rawurlencode($token);
 
-        $href = hsc($url);
-        $title_attr = hsc($path);
+		$renderer->doc .=
+			'<a class="localopen-link" title="' . hsc($path) . '" href="' . hsc($url) . '">' .
+			'<img src="' . hsc(DOKU_BASE . 'lib/plugins/localopen/images/lopen.svg') . '" alt="" class="localopen-icon" /> ' .
+			$title .
+			'</a>';
 
-        $icon = DOKU_BASE . 'lib/plugins/localopen/images/lopen.svg';
-
-        $renderer->doc .=
-            '<a class="localopen-link" title="' . $title_attr . '" href="' . $href . '" onclick="(new Image()).src=this.href + \'&_=\'+ Date.now(); return false;">' .
-            '<img src="' . hsc($icon) . '" alt="" class="localopen-icon" /> ' .
-            $title .
-            '</a>';
-
-        return true;
-    }
+		return true;
+	}
 }
