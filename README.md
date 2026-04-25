@@ -80,7 +80,7 @@ import time
 
 HOST = "127.0.0.1"
 PORT = 2222
-TOKEN = "JqV5nRaGMau"
+TOKEN = "PutYourTokenHere"
 
 def normalize_path(path: str) -> str:
     path = path.strip().strip('"').strip("'")
