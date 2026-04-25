@@ -21,13 +21,13 @@ This plugin replaces `localexplorer://`-style links with a modern, secure approa
 
 ## 🧠 How It Works
 
-1. The plugin renders links like:  \[\[localopen>c:\windows|Windows\]\]
+1. The plugin renders links like:  \{\{localopen>c:\windows|Windows\}\}
 
 2. When clicked:
 - A background `fetch()` request is sent to:
 
   ```
-  http://127.0.0.1:2222/open?path=...&token=...
+  http://127.0.0.1:8765/open?path=...&token=...
   ```
 - A small Python service running locally receives the request
 - The service opens the file using Windows (`os.startfile`)
@@ -79,8 +79,8 @@ import time
 
 
 HOST = "127.0.0.1"
-PORT = 2222
-TOKEN = "PutYourTokenHere"
+PORT = 8765
+TOKEN = "JqV5nRaGMau"
 
 def normalize_path(path: str) -> str:
     path = path.strip().strip('"').strip("'")
@@ -115,6 +115,9 @@ def open_path(path):
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
+    
+        print("GET received:", self.path, flush=True)
+    
         parsed = urlparse(self.path)
 
         if parsed.path != "/open":
@@ -171,8 +174,7 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(f"Error: {e}".encode("utf-8"))
 
     def log_message(self, format, *args):
-        # Stay silent
-        pass
+        print("%s - %s" % (self.address_string(), format % args), flush=True)
 
 def main():
     try:
@@ -195,7 +197,7 @@ This guide configures your Python script to run **silently** when you log into W
 ## Prerequisites
 
 - Python installed
-- Your script (e.g., `local_linker.py`) working when run manually
+- Your script (e.g., `LocalOpen.py`) working when run manually
 - Path to `pythonw.exe` (important for no console window)
 
 Example Python path:  C:\Users\me\AppData\Local\Programs\Python\Python310\pythonw.exe
@@ -251,7 +253,7 @@ C:\Users\me\AppData\Local\Programs\Python\Python310\pythonw.exe
 
 
 ### Add arguments
-"C:\Users\me\OneDrive\Apps\General Python Scripts\local_linker.py"
+"C:\Users\me\OneDrive\Apps\General Python Scripts\LocalOpen.py"
 
 
 ### Start in
